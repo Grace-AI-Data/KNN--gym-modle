@@ -1,8 +1,45 @@
-# 今天在做随机森林时，新出现一个函数set.seed()，书上的注释是设定产生随机数的初始值。对于这个说法还是没什么概念，问了师兄，他也是说的含含糊糊的，并没听懂。
-在网上查了R的文档，上面解释说：set.seed is the recommended way to specify seeds.
-我又在各个论坛中查看别的人的说法。终于搞明白了。
-set.seed()用于设定随机数种子，一个特定的种子可以产生一个特定的伪随机序列，这个函数的主要目的，是让你的模拟能够可重复出现，因为很多时候我们需要取随机数，但这段代码再跑一次的时候，结果就不一样了，如果需要重复出现同样的模拟结果的话，就可以用set.seed()。在调试程序或者做展示的时候，结果的可重复性是很重要的，所以随机数种子也就很有必要。
-也可以简单地理解为括号里的数只是一个编号而已，例如set.seed(100)不应将括号里的数字理解成“一百”，而是应该理解成“编号为一零零的随机数发生”，下一次再模拟可以采用二零零（200）或者一一一（111）等不同的编号即可，编号设定基本可以随意。
+install.packages(c("caret","gains","pROC"))#install load the caret,proc packages
+library(caret)
+libray(gains)
+libray(pROC)
+mydata1<-scale.(mydata[2:4]) #standardize some variables,store them in new data fram called my data1
+mydata1<-data.fram(mydata1,mydata$Enroll) #append the original enroll varibale back to mydata1
+colnames(mydata1)[4]<-'Enroll' #use colnames function to rename my data1&$mydata.Enroll(in column 4)
+mydata1$Enroll<-as.factor(mydata1$Enroll) #use as.factor to convert target variable to a catergorical data type
+set.seed(1) #set rundom seed to 1 to ensure consistency
+myIndex<-createDataPartition(mydata1$Enroll, p=0.6,list=FASLE) #createDataPartition function,specify Enroll as the target variable
+trainSet<-myData1[myIndex,] 
+validationSet<-mydata1[-myIndex,]
+#use the traincontrol function to implement a 10-fold cross validation by setting the option method equal to cv and the option numbwe equal to 10
+myCtrl<-trainControl(method="cv",number=10)
+myGrid<-expand.grid(.k=c(1:10))  #k values from 1 to 10, store the results in an object called mygrid,check which k has the most accuracy
+set.seed(1) #fix a random seed
+KNN_fit<-train(Enroll~.,data=trainSet, method="knn",trControl=myCtr1,tuneGrid=myGrid)
+KNN_fit  ##if the performance values from the training data are considerably better than the values from the validation and test data, overfittinf might be an issue
 
-lift chart
-A lift chart graphically represents the improvement that a mining model provides when compared against a random guess, and measures the change in terms of a lift score. ... In SQL Server Data Mining, the lift chart can compare the accuracy of multiple models that have the same predictable attribute.
+KNN_Class<-predict(KNN_fit, newdata=validationSet) #apply knn model, use predict on validation data set
+confusionMatrix(KNN_Class,validationSet$Enroll,positive='1') #1:enrolled in the gym
+#evaluate predictive performance of knn model using a different cutoff value in R,
+#we first compute the probability of each case belonging to the target class instead of its class memembership
+KNN_Class_prob<-predict(KNN_fit,newdata=validationSet,type='prob') #type to predict tha probability value
+#ifelse function to determine the class memberships  #as.factor function to convert the calss membership to factor
+confusionMatrix(as.factor(ifelse(KNN_Class_prob[,2]>0.25,'1','0'),validationSet$Enrill,positive='1'))
+#convert Enroll variable back as a numerical data type as required by the gains package
+validationSet$Enroll<-as.numberic(as.character(validationSet$Enroll))
+gains_table<-gains(validationSet$Enroll,KNN_Class_prob[,2])
+gains_table
+#pot function to create the cumulative lift chart for knn
+plot(c(gains_table$cume.pct.of.total*sum(validationSet$Enroll))~c(0,gains_table$cume.obs),xlab="#of cases",ylab="cumulative",main="cumulative lift chart",type="1"
+#draws a dashed diagonal line to indicate the baseline model
+lines(c(0,sum(validationSet$Enroll))~c(0,dim(validationSet)[1]),col="red",1ty=2)
+#to plot the decile-wise lift chart, we use the barplot function to plot a bar chart
+barplot(gains_tables$mean,resp/mean(validationSet$Enroll),names.arg=gains_table$depth,xlab="Percentile",ylab="lift",ylim=c(0,3),main="Decile-Wise Lift Chart")
+#use roc function to produce a roc object to plot roc curve
+roc_object<-roc(validationSet$Enroll,KNN_Class_prob[,2])
+plot.roc(roc_object)
+auc(roc_object) #to retrieve the auc value
+PreProcessing<-preProcess(myData[,2:4],method=c("center","scale")) #COMPUTE the means and standard deviations of the predictor cariables in mydata,center: mean, scale: standard deviation
+myScoreData1<-predict(Preproccesing,myScoreData)#standardize my scoredata and score the z-scores in new data frame named mycoredata1
+KNN_Score<-predict(KNN_fit,newdata=myScoreData1) #score the new records
+myScoreData<-data.frame(myScoreData,KNN_Score) #append the classification results back to the original data set
+View(myScoreData) #display the updated data set
